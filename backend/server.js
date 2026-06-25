@@ -96,7 +96,7 @@ const verifyAdmin = (req, res, next) => {
 // ---------------------------------------------------------
 
 app.post('/api/auth/register', async (req, res) => {
-  if (!isDbConnected) return res.status(503).json({ error: "Database offline." });
+  if (!process.env.MONGO_URI) return res.status(503).json({ error: "Database offline." });
   try {
     const { name, email, password } = req.body;
     
@@ -129,7 +129,7 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 app.post('/api/auth/login', async (req, res) => {
-  if (!isDbConnected) return res.status(503).json({ error: "Database offline." });
+  if (!process.env.MONGO_URI) return res.status(503).json({ error: "Database offline." });
   try {
     const { email, password } = req.body;
     
@@ -163,7 +163,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/products', async (req, res) => {
-  if (!isDbConnected) {
+  if (!process.env.MONGO_URI) {
     console.log("Serving offline mock products...");
     return res.json(offlineProducts);
   }
@@ -176,7 +176,7 @@ app.get('/api/products', async (req, res) => {
 });
 
 app.get('/api/stats', async (req, res) => {
-  if (!isDbConnected) {
+  if (!process.env.MONGO_URI) {
     // Offline Mock Stats
     return res.json({
       activeUsers: 0, // Reset to start at 0
@@ -209,7 +209,7 @@ app.get('/api/stats', async (req, res) => {
 });
 
 app.get('/api/cart', async (req, res) => {
-  if (!isDbConnected) return res.json([]);
+  if (!process.env.MONGO_URI) return res.json([]);
   try {
     const cart = await Cart.findOne({ userId: 'anonymous' });
     res.json(cart ? cart.items : []);
@@ -219,7 +219,7 @@ app.get('/api/cart', async (req, res) => {
 });
 
 app.post('/api/cart', async (req, res) => {
-  if (!isDbConnected) return res.status(503).json({ error: "Database offline." });
+  if (!process.env.MONGO_URI) return res.status(503).json({ error: "Database offline." });
   try {
     let cart = await Cart.findOne({ userId: 'anonymous' });
     if (!cart) cart = new Cart({ userId: 'anonymous', items: [] });
@@ -237,7 +237,7 @@ app.post('/api/cart', async (req, res) => {
 });
 
 app.delete('/api/cart/:id', async (req, res) => {
-  if (!isDbConnected) return res.status(503).json({ error: "Database offline." });
+  if (!process.env.MONGO_URI) return res.status(503).json({ error: "Database offline." });
   try {
     const cart = await Cart.findOne({ userId: 'anonymous' });
     if (cart) {
@@ -252,7 +252,7 @@ app.delete('/api/cart/:id', async (req, res) => {
 
 // Checkout Route (Create Order)
 app.post('/api/orders', async (req, res) => {
-  if (!isDbConnected) return res.status(503).json({ error: "Database offline." });
+  if (!process.env.MONGO_URI) return res.status(503).json({ error: "Database offline." });
   try {
     const cart = await Cart.findOne({ userId: 'anonymous' });
     if (!cart || cart.items.length === 0) return res.status(400).json({ error: "Cart is empty" });
@@ -284,7 +284,7 @@ app.post('/api/chat', async (req, res) => {
 
   try {
     let catalogDesc = "No products found.";
-    if (isDbConnected) {
+    if (process.env.MONGO_URI) {
       const products = await Product.find({}).select('name price category rating badge -_id');
       catalogDesc = JSON.stringify(products);
     }
@@ -336,7 +336,7 @@ app.post('/api/admin/login', loginLimiter, (req, res) => {
 // Admin Get Orders
 app.get('/api/admin/orders', verifyAdmin, async (req, res) => {
   try {
-    if (!isDbConnected) {
+    if (!process.env.MONGO_URI) {
       return res.json(offlineOrders);
     }
     const orders = await Order.find({}).sort({ createdAt: -1 });
@@ -349,7 +349,7 @@ app.get('/api/admin/orders', verifyAdmin, async (req, res) => {
 // Admin Mark Order Delivered
 app.put('/api/admin/orders/:id/deliver', verifyAdmin, async (req, res) => {
   try {
-    if (!isDbConnected) {
+    if (!process.env.MONGO_URI) {
       const order = offlineOrders.find(o => o._id === req.params.id);
       if (!order) return res.status(404).json({ error: "Order not found" });
       if (order.status === 'Delivered') return res.status(400).json({ error: "Order is already marked as Delivered" });
@@ -387,7 +387,7 @@ app.post('/api/admin/products', verifyAdmin, async (req, res) => {
     const productData = req.body;
     productData.id = Date.now().toString(); // Generate ID mapping
     
-    if (!isDbConnected) {
+    if (!process.env.MONGO_URI) {
       offlineProducts.unshift(productData);
       return res.status(201).json(productData);
     }
@@ -403,7 +403,7 @@ app.post('/api/admin/products', verifyAdmin, async (req, res) => {
 // Admin Update Product
 app.put('/api/admin/products/:id', verifyAdmin, async (req, res) => {
   try {
-    if (!isDbConnected) {
+    if (!process.env.MONGO_URI) {
       const index = offlineProducts.findIndex(p => p.id === req.params.id);
       if (index !== -1) {
         offlineProducts[index] = { ...offlineProducts[index], ...req.body, id: req.params.id };
@@ -427,7 +427,7 @@ app.put('/api/admin/products/:id', verifyAdmin, async (req, res) => {
 // Admin Delete Product
 app.delete('/api/admin/products/:id', verifyAdmin, async (req, res) => {
   try {
-    if (!isDbConnected) {
+    if (!process.env.MONGO_URI) {
       offlineProducts = offlineProducts.filter(p => p.id !== req.params.id);
       return res.json({ success: true });
     }
