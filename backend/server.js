@@ -10,6 +10,8 @@ const Product = require('./models/Product');
 const Cart = require('./models/Cart');
 const Order = require('./models/Order');
 const Stat = require('./models/Stat');
+const User = require('./models/User');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -88,6 +90,69 @@ const verifyAdmin = (req, res, next) => {
     res.status(403).json({ error: 'Invalid or expired token' });
   }
 };
+
+// ---------------------------------------------------------
+// USER AUTH ROUTES
+// ---------------------------------------------------------
+
+app.post('/api/auth/register', async (req, res) => {
+  if (!isDbConnected) return res.status(503).json({ error: "Database offline." });
+  try {
+    const { name, email, password } = req.body;
+    
+    // Check if user exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already in use' });
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create user
+    const user = new User({
+      name,
+      email,
+      password: hashedPassword
+    });
+    
+    await user.save();
+
+    // Generate JWT
+    const token = jwt.sign({ userId: user._id, name: user.name, role: 'user' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    
+    res.status(201).json({ token, user: { id: user._id, name: user.name, email: user.email } });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  if (!isDbConnected) return res.status(503).json({ error: "Database offline." });
+  try {
+    const { email, password } = req.body;
+    
+    // Check user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid email or password' });
+    }
+
+    // Verify password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Invalid email or password' });
+    }
+
+    // Generate JWT
+    const token = jwt.sign({ userId: user._id, name: user.name, role: 'user' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    
+    res.status(200).json({ token, user: { id: user._id, name: user.name, email: user.email } });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // ---------------------------------------------------------
 // PUBLIC STOREFRONT ROUTES
@@ -225,7 +290,7 @@ app.post('/api/chat', async (req, res) => {
     }
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
-      systemInstruction: `You are the AI shopping assistant for "The Vault". Catalog: ${catalogDesc}. Keep replies under 3 short paragraphs.`
+      systemInstruction: `You are the AI Customer Support bot for "The Vault". Your job is to help users troubleshoot issues, report problems, and answer questions about orders or products. Always be polite and helpful. If a user asks to speak to a human, needs further assistance, or has a complex issue, provide them with our official support email: support@thevault.com. For reference, here is the current store catalog: ${catalogDesc}. Keep replies under 3 short paragraphs.`
     });
     const result = await model.generateContent(prompt);
     res.json({ response: result.response.text() });
