@@ -19,7 +19,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please provide a password'],
     minlength: 6,
-  }
+  },
+  phone: { type: String, default: '' },
+  address: { type: String, default: '' },
+  city: { type: String, default: '' },
+  zip: { type: String, default: '' }
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

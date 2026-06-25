@@ -11,13 +11,36 @@ const Cart = require('./models/Cart');
 const Order = require('./models/Order');
 const Stat = require('./models/Stat');
 const User = require('./models/User');
+const HeroItem = require('./models/HeroItem');
+const Review = require('./models/Review');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)){
+    fs.mkdirSync(uploadsDir);
+}
+
+// Configure Multer Storage
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/')
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname)
+  }
+});
+const upload = multer({ storage: storage });
 
 // Initialize Gemini
 let genAI = null;
@@ -26,17 +49,9 @@ if (process.env.GEMINI_API_KEY) {
 }
 
 // ---------------------------------------------------------
-// DATABASE CONNECTION & SEEDING
+// DATABASE CONNECTION
 // ---------------------------------------------------------
 let isDbConnected = false;
-let offlineProducts = [
-  { id: 'prod-1', name: "Cyber-Katana Replica (Neon Blue)", price: 149.99, category: "Replicas", rating: 4.8, reviews: 124, image: "https://images.unsplash.com/photo-1589315421526-0e107df0e0bd?auto=format&fit=crop&q=80&w=400", badge: "New" },
-  { id: 'prod-2', name: "Evangelion Unit-01 Action Figure", price: 89.99, category: "Figures", rating: 4.9, reviews: 89, image: "https://images.unsplash.com/photo-1596726202484-98c9f564dc5c?auto=format&fit=crop&q=80&w=400", badge: "Best Seller" },
-  { id: 'prod-3', name: "Holographic Cyber Jacket", price: 120.00, category: "Apparel", rating: 4.5, reviews: 56, image: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&q=80&w=400", badge: "Limited" },
-  { id: 'prod-4', name: "Akira Neo-Tokyo Synthwave Poster", price: 24.99, category: "Posters", rating: 5.0, reviews: 210, image: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=80&w=400", badge: null },
-  { id: 'prod-5', name: "Quantum Core LED Desk Lamp", price: 59.99, category: "Accessories", rating: 4.7, reviews: 42, image: "https://images.unsplash.com/photo-1517685633466-403d6955aeab?auto=format&fit=crop&q=80&w=400", badge: "Hot" },
-  { id: 'prod-6', name: "Darth Vader 1:1 Scale Helmet", price: 299.99, category: "Replicas", rating: 4.9, reviews: 312, image: "https://images.unsplash.com/photo-1608889175123-8ee362201f81?auto=format&fit=crop&q=80&w=400", badge: "Premium" },
-];
 
 const connectDB = async () => {
   if (!process.env.MONGO_URI) {
@@ -48,31 +63,28 @@ const connectDB = async () => {
     await mongoose.connect(process.env.MONGO_URI);
     isDbConnected = true;
     console.log("🟢 Connected to MongoDB Successfully");
-
-    // Auto-seed Initial Products if DB is empty
-    const productCount = await Product.countDocuments();
-    if (productCount === 0) {
-      console.log("Seeding Database with Initial Catalog...");
-      const initialCatalog = [
-        { id: '1', name: "Wado Ichimonji Katana - Hand Forged Replica", price: 149.99, category: "Replicas", rating: 4.9, reviews: 128, image: "https://images.unsplash.com/photo-1589255627727-4cb294ba452a?auto=format&fit=crop&q=80&w=400", badge: "Bestseller" },
-        { id: '2', name: "Satoru Domain Expansion 1/7 Scale Figure", price: 89.99, category: "Figures", rating: 4.8, reviews: 56, image: "https://images.unsplash.com/photo-1606663886619-25ea15dd3f32?auto=format&fit=crop&q=80&w=400", badge: "Low Stock" },
-        { id: '3', name: "Crimson Cloud Embroidered Heavy Hoodie", price: 59.99, category: "Apparel", rating: 4.7, reviews: 342, image: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=400", badge: null },
-        { id: '4', name: "Mark 85 Diecast 1/6 Scale Collectible Figure", price: 349.99, category: "Figures", rating: 5.0, reviews: 89, image: "https://images.unsplash.com/photo-1608889825103-eb5ed706fc64?auto=format&fit=crop&q=80&w=400", badge: "Pre-order" },
-        { id: '5', name: "Vintage Web-Slinger Canvas Wall Art (24x36)", price: 24.99, category: "Posters", rating: 4.5, reviews: 210, image: "https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?auto=format&fit=crop&q=80&w=400", badge: null },
-        { id: '6', name: "Vibranium Shield 1:1 Prop Replica", price: 199.99, category: "Replicas", rating: 4.9, reviews: 45, image: "https://images.unsplash.com/photo-1569003339405-ea396a5a8a90?auto=format&fit=crop&q=80&w=400", badge: "Hot" },
-        { id: '7', name: "Hero's Master Sword - Full Tang Metal Prop", price: 129.99, category: "Replicas", rating: 4.9, reviews: 312, image: "https://images.unsplash.com/photo-1552820728-8b83bb6b773f?auto=format&fit=crop&q=80&w=400", badge: "Exclusive" },
-        { id: '8', name: "Neon City Extended RGB Gaming Desk Mat", price: 34.99, category: "Accessories", rating: 4.6, reviews: 87, image: "https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?auto=format&fit=crop&q=80&w=400", badge: null },
-        { id: '9', name: "Leviathan Axe Frost Edition Replica", price: 159.99, category: "Replicas", rating: 4.8, reviews: 67, image: "https://images.unsplash.com/photo-1588724591460-6c9b3a016625?auto=format&fit=crop&q=80&w=400", badge: null },
-        { id: '10', name: "Uchiha Clan Minimalist T-Shirt", price: 29.99, category: "Apparel", rating: 4.4, reviews: 15, image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&q=80&w=400", badge: null },
-      ];
-      await Product.insertMany(initialCatalog);
-      console.log("Database seeded successfully!");
-    }
   } catch (err) {
     console.error("❌ MongoDB Connection Error:", err.message);
   }
 };
 connectDB();
+
+// ---------------------------------------------------------
+// MIDDLEWARE: VERIFY USER
+// ---------------------------------------------------------
+const verifyUser = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: 'Access denied' });
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // { userId, role }
+    next();
+  } catch (err) {
+    res.status(403).json({ error: 'Invalid or expired token' });
+  }
+};
 
 // ---------------------------------------------------------
 // MIDDLEWARE: VERIFY ADMIN
@@ -98,7 +110,7 @@ const verifyAdmin = (req, res, next) => {
 app.post('/api/auth/register', async (req, res) => {
   if (!process.env.MONGO_URI) return res.status(503).json({ error: "Database offline." });
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, rememberMe } = req.body;
     
     // Check if user exists
     const existingUser = await User.findOne({ email });
@@ -120,9 +132,10 @@ app.post('/api/auth/register', async (req, res) => {
     await user.save();
 
     // Generate JWT
-    const token = jwt.sign({ userId: user._id, name: user.name, role: 'user' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const expiresIn = rememberMe ? '7d' : '24h';
+    const token = jwt.sign({ userId: user._id, name: user.name, role: 'user' }, process.env.JWT_SECRET, { expiresIn });
     
-    res.status(201).json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    res.status(201).json({ token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone, address: user.address, city: user.city, zip: user.zip } });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -131,7 +144,7 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   if (!process.env.MONGO_URI) return res.status(503).json({ error: "Database offline." });
   try {
-    const { email, password } = req.body;
+    const { email, password, rememberMe } = req.body;
     
     // Check user exists
     const user = await User.findOne({ email });
@@ -146,9 +159,10 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Generate JWT
-    const token = jwt.sign({ userId: user._id, name: user.name, role: 'user' }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const expiresIn = rememberMe ? '7d' : '24h';
+    const token = jwt.sign({ userId: user._id, name: user.name, role: 'user' }, process.env.JWT_SECRET, { expiresIn });
     
-    res.status(200).json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    res.status(200).json({ token, user: { id: user._id, name: user.name, email: user.email, phone: user.phone, address: user.address, city: user.city, zip: user.zip } });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -158,6 +172,36 @@ app.post('/api/auth/login', async (req, res) => {
 // PUBLIC STOREFRONT ROUTES
 // ---------------------------------------------------------
 
+app.get('/api/auth/profile', verifyUser, async (req, res) => {
+  if (!process.env.MONGO_URI) return res.status(503).json({ error: "Database offline." });
+  try {
+    const user = await User.findById(req.user.userId).select('-password');
+    if (!user) return res.status(404).json({ error: "User not found" });
+    res.json({ id: user._id, name: user.name, email: user.email, phone: user.phone, address: user.address, city: user.city, zip: user.zip });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/auth/profile', verifyUser, async (req, res) => {
+  if (!process.env.MONGO_URI) return res.status(503).json({ error: "Database offline." });
+  try {
+    const { phone, address, city, zip } = req.body;
+    const user = await User.findById(req.user.userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    if (phone !== undefined) user.phone = phone;
+    if (address !== undefined) user.address = address;
+    if (city !== undefined) user.city = city;
+    if (zip !== undefined) user.zip = zip;
+
+    await user.save();
+    res.json({ id: user._id, name: user.name, email: user.email, phone: user.phone, address: user.address, city: user.city, zip: user.zip });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/', (req, res) => {
   res.send('The Vault Backend API is Running');
 });
@@ -165,13 +209,77 @@ app.get('/', (req, res) => {
 app.get('/api/products', async (req, res) => {
   if (!process.env.MONGO_URI) {
     console.log("Serving offline mock products...");
-    return res.json(offlineProducts);
+    return res.json([]);
   }
   try {
     const products = await Product.find({});
     res.json(products);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch products" });
+  }
+});
+
+// Get Single Product & Reviews
+app.get('/api/products/:id', async (req, res) => {
+  if (!process.env.MONGO_URI) return res.status(503).json({ error: "Offline" });
+  try {
+    const product = await Product.findOne({ id: req.params.id });
+    if (!product) return res.status(404).json({ error: "Product not found" });
+    
+    const reviews = await Review.find({ product: req.params.id }).sort({ createdAt: -1 });
+    res.json({ product, reviews });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch product details" });
+  }
+});
+
+// Post a Review (Verified Purchase Only)
+app.post('/api/products/:id/reviews', verifyUser, async (req, res) => {
+  if (!process.env.MONGO_URI) return res.status(503).json({ error: "Offline" });
+  try {
+    const productId = req.params.id;
+    
+    // Check if user has purchased this product (Status: Delivered)
+    const orders = await Order.find({ userId: req.user.userId, status: 'Delivered' });
+    const hasPurchased = orders.some(order => order.items.some(item => item.productId === productId));
+    
+    if (!hasPurchased) {
+      return res.status(403).json({ error: "You can only review products you have purchased and received." });
+    }
+
+    // Check if user already reviewed
+    const existingReview = await Review.findOne({ product: productId, user: req.user.userId });
+    if (existingReview) {
+      return res.status(400).json({ error: "You have already reviewed this product." });
+    }
+
+    // Create review
+    const { rating, comment, userName } = req.body;
+    const review = new Review({
+      product: productId,
+      user: req.user.userId,
+      userName: userName,
+      rating: Number(rating),
+      comment: comment
+    });
+    await review.save();
+
+    // Recalculate average rating
+    const allReviews = await Review.find({ product: productId });
+    const avgRating = allReviews.reduce((acc, item) => item.rating + acc, 0) / allReviews.length;
+
+    // Update product
+    await Product.findOneAndUpdate(
+      { id: productId },
+      { 
+        rating: avgRating.toFixed(1),
+        reviews: allReviews.length
+      }
+    );
+
+    res.status(201).json(review);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to submit review" });
   }
 });
 
@@ -208,23 +316,23 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-app.get('/api/cart', async (req, res) => {
+app.get('/api/cart', verifyUser, async (req, res) => {
   if (!process.env.MONGO_URI) return res.json([]);
   try {
-    const cart = await Cart.findOne({ userId: 'anonymous' });
+    const cart = await Cart.findOne({ userId: req.user.userId });
     res.json(cart ? cart.items : []);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch cart" });
   }
 });
 
-app.post('/api/cart', async (req, res) => {
+app.post('/api/cart', verifyUser, async (req, res) => {
   if (!process.env.MONGO_URI) return res.status(503).json({ error: "Database offline." });
   try {
-    let cart = await Cart.findOne({ userId: 'anonymous' });
-    if (!cart) cart = new Cart({ userId: 'anonymous', items: [] });
+    let cart = await Cart.findOne({ userId: req.user.userId });
+    if (!cart) cart = new Cart({ userId: req.user.userId, items: [] });
     cart.items.push({
-      productId: req.body.id,
+      productId: req.body.id || req.body.productId,
       name: req.body.name,
       price: req.body.offerPrice || req.body.price,
       image: req.body.image
@@ -236,10 +344,36 @@ app.post('/api/cart', async (req, res) => {
   }
 });
 
-app.delete('/api/cart/:id', async (req, res) => {
+// Endpoint to merge local guest cart into user cart upon login
+app.post('/api/cart/merge', verifyUser, async (req, res) => {
   if (!process.env.MONGO_URI) return res.status(503).json({ error: "Database offline." });
   try {
-    const cart = await Cart.findOne({ userId: 'anonymous' });
+    const { guestCart } = req.body;
+    if (!guestCart || guestCart.length === 0) return res.json({ success: true });
+
+    let cart = await Cart.findOne({ userId: req.user.userId });
+    if (!cart) cart = new Cart({ userId: req.user.userId, items: [] });
+    
+    guestCart.forEach(item => {
+      cart.items.push({
+        productId: item.id || item.productId,
+        name: item.name,
+        price: item.offerPrice || item.price,
+        image: item.image
+      });
+    });
+    
+    await cart.save();
+    res.status(200).json(cart.items);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to merge cart" });
+  }
+});
+
+app.delete('/api/cart/:id', verifyUser, async (req, res) => {
+  if (!process.env.MONGO_URI) return res.status(503).json({ error: "Database offline." });
+  try {
+    const cart = await Cart.findOne({ userId: req.user.userId });
     if (cart) {
       cart.items = cart.items.filter(item => item._id.toString() !== req.params.id);
       await cart.save();
@@ -251,16 +385,16 @@ app.delete('/api/cart/:id', async (req, res) => {
 });
 
 // Checkout Route (Create Order)
-app.post('/api/orders', async (req, res) => {
+app.post('/api/orders', verifyUser, async (req, res) => {
   if (!process.env.MONGO_URI) return res.status(503).json({ error: "Database offline." });
   try {
-    const cart = await Cart.findOne({ userId: 'anonymous' });
+    const cart = await Cart.findOne({ userId: req.user.userId });
     if (!cart || cart.items.length === 0) return res.status(400).json({ error: "Cart is empty" });
 
     const totalAmount = cart.items.reduce((sum, item) => sum + item.price, 0);
 
     const order = new Order({
-      userId: 'anonymous', // Simulated user
+      userId: req.user.userId,
       items: cart.items,
       totalAmount: totalAmount + (totalAmount > 50 ? 0 : 15) // Adding shipping if applicable
     });
@@ -437,6 +571,54 @@ app.delete('/api/admin/products/:id', verifyAdmin, async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: "Failed to delete product" });
+  }
+});
+
+// Admin Upload File
+app.post('/api/admin/upload', verifyAdmin, upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+    // Return the local URL
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    res.json({ url: fileUrl });
+  } catch (err) {
+    res.status(500).json({ error: "File upload failed" });
+  }
+});
+
+// Admin Get Hero Items
+app.get('/api/hero', async (req, res) => {
+  if (!process.env.MONGO_URI) return res.json([]);
+  try {
+    const heroes = await HeroItem.find({ active: true }).sort({ createdAt: -1 });
+    res.json(heroes);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch heroes" });
+  }
+});
+
+// Admin Create Hero Item
+app.post('/api/admin/hero', verifyAdmin, async (req, res) => {
+  if (!process.env.MONGO_URI) return res.status(503).json({ error: "Database offline" });
+  try {
+    const newHero = new HeroItem(req.body);
+    await newHero.save();
+    res.status(201).json(newHero);
+  } catch (err) {
+    res.status(400).json({ error: "Failed to create hero" });
+  }
+});
+
+// Admin Delete Hero Item
+app.delete('/api/admin/hero/:id', verifyAdmin, async (req, res) => {
+  if (!process.env.MONGO_URI) return res.status(503).json({ error: "Database offline" });
+  try {
+    await HeroItem.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(400).json({ error: "Failed to delete hero" });
   }
 });
 

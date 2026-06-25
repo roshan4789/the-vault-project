@@ -15,6 +15,7 @@ export default function Auth() {
     email: '',
     password: ''
   });
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
 
   const handleChange = (e) => {
@@ -30,8 +31,8 @@ export default function Auth() {
     try {
       const endpoint = isLogin ? '/auth/login' : '/auth/register';
       const payload = isLogin 
-        ? { email: formData.email, password: formData.password }
-        : formData;
+        ? { email: formData.email, password: formData.password, rememberMe }
+        : { ...formData, rememberMe };
 
       const res = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
@@ -48,6 +49,24 @@ export default function Auth() {
       // Save to localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Merge Guest Cart
+      const guestCart = localStorage.getItem('guestCart');
+      if (guestCart) {
+        try {
+          await fetch(`${API_BASE}/cart/merge`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${data.token}`
+            },
+            body: JSON.stringify({ guestCart: JSON.parse(guestCart) })
+          });
+          localStorage.removeItem('guestCart');
+        } catch (e) {
+          console.error("Failed to merge cart", e);
+        }
+      }
 
       // Redirect
       window.location.href = '/';
@@ -98,7 +117,7 @@ export default function Auth() {
             <p className="text-indigo-200 text-sm">
               {isLogin 
                 ? 'Enter your details to access your account' 
-                : 'Start your 30-day free trial today'}
+                : 'Create your account to unlock The Vault'}
             </p>
           </div>
 
@@ -181,6 +200,8 @@ export default function Auth() {
                       id="remember-me"
                       name="remember-me"
                       type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
                       className="h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-gray-300 rounded bg-white/5 cursor-pointer"
                     />
                     <label htmlFor="remember-me" className="ml-2 block text-sm text-indigo-200 cursor-pointer">

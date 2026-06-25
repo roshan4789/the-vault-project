@@ -1,12 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ShoppingCart, Search, Star, Sparkles, X, Send, Loader2, Bot, Filter, Check, User, LogOut } from 'lucide-react';
+import { ShoppingCart, Search, Star, Sparkles, X, Send, Loader2, Bot, Filter, Check, User, LogOut, Menu, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { LightRays } from './components/LightRays';
 import { SpeedLoader } from './components/SpeedLoader';
 import { GlowingEdgeCard } from './components/GlowingEdgeCard';
 import { StatsSection } from './components/StatsSection';
+import { ProfileModal } from './components/ProfileModal';
+import { HeroCarousel } from './components/HeroCarousel';
+import { Package } from 'lucide-react';
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000/api';
 const categories = ["All", "Figures", "Replicas", "Apparel", "Posters", "Accessories"];
+
+import { useNavigate } from 'react-router-dom';
 
 // ==========================================
 // GEMINI API INTEGRATION (Geek Assistant)
@@ -101,11 +106,17 @@ const AIChat = () => {
 // ==========================================
 // THE VAULT (Neon/Universe Layout)
 // ==========================================
-const NeonVaultLayout = ({ activeCategory, setActiveCategory, displayedProducts, cart, addToCart, selectedProduct, setSelectedProduct, stats, user, handleLogout }) => {
+const NeonVaultLayout = ({ 
+  activeCategory, setActiveCategory, displayedProducts, 
+  cart, addToCart, stats, user, handleLogout, heroes 
+}) => {
+  const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
-  <div className="min-h-screen bg-[#1A1A1B] text-slate-300 font-sans flex flex-col selection:bg-cyan-500 selection:text-black relative overflow-hidden">
+  <div className="min-h-screen bg-[#1A1A1B] text-slate-300 font-sans flex flex-col selection:bg-cyan-500 selection:text-black relative overflow-x-hidden">
     {/* Dynamic Cinematic Background Layer */}
     <div className="fixed inset-0 z-0 bg-[#0F0F10]">
       <LightRays
@@ -121,7 +132,7 @@ const NeonVaultLayout = ({ activeCategory, setActiveCategory, displayedProducts,
       />
     </div>
     
-    <header className="relative z-40 bg-black/80 backdrop-blur-md border-b border-cyan-500/30 sticky top-0 shadow-[0_4px_30px_rgba(6,182,212,0.15)]">
+    <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-cyan-500/30 shadow-[0_4px_30px_rgba(6,182,212,0.15)]">
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8 h-20 flex items-center justify-between gap-8">
         <div className="flex items-center cursor-pointer flex-shrink-0">
           <img 
@@ -152,6 +163,13 @@ const NeonVaultLayout = ({ activeCategory, setActiveCategory, displayedProducts,
                     <p className="text-sm font-bold text-white truncate">{user.email}</p>
                   </div>
                   <button 
+                    onClick={() => { setDropdownOpen(false); setShowProfileModal(true); }}
+                    className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-white/5 hover:text-cyan-400 transition-colors flex items-center gap-2"
+                  >
+                    <Settings size={14} />
+                    Profile
+                  </button>
+                  <button 
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/5 hover:text-red-300 transition-colors flex items-center gap-2"
                   >
@@ -174,9 +192,57 @@ const NeonVaultLayout = ({ activeCategory, setActiveCategory, displayedProducts,
               </span>
             )}
           </Link>
+
+          {/* Hamburger Menu for Mobile */}
+          <button 
+            className="md:hidden text-cyan-400 hover:text-cyan-300 transition-colors"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
+          </button>
         </div>
       </div>
     </header>
+
+    {showProfileModal && user && (
+      <ProfileModal 
+        user={user} 
+        onClose={() => setShowProfileModal(false)} 
+        onUpdate={(updatedUser) => {
+          setUser(updatedUser);
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        }} 
+      />
+    )}
+
+    {/* Mobile Categories Menu */}
+    {mobileMenuOpen && (
+      <div className="md:hidden fixed inset-0 z-30 bg-black/95 backdrop-blur-xl pt-24 px-6 pb-6 overflow-y-auto">
+        <h3 className="text-white font-bold mb-6 uppercase text-sm tracking-wider flex items-center gap-2">
+          <Filter size={16} className="text-cyan-400 drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]" /> Category
+        </h3>
+        <ul className="space-y-6 text-lg">
+          {categories.map((cat) => (
+            <li 
+              key={cat} 
+              className="flex items-center gap-4 cursor-pointer" 
+              onClick={() => {
+                setActiveCategory(cat);
+                setMobileMenuOpen(false);
+              }}
+            >
+              <div className={`w-6 h-6 rounded border flex items-center justify-center transition-all ${activeCategory === cat ? 'bg-cyan-500 border-cyan-500 text-black shadow-[0_0_10px_rgba(6,182,212,0.8)]' : 'border-slate-500'}`}>
+                {activeCategory === cat && <Check size={16} strokeWidth={4} />}
+              </div>
+              <span className={`transition-colors tracking-wide ${activeCategory === cat ? 'text-cyan-400 font-bold drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]' : 'text-slate-400'}`}>{cat}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    {/* Hero Bar */}
+    <HeroCarousel heroes={heroes} />
 
     <main className="relative z-10 flex-grow max-w-[1400px] mx-auto px-4 lg:px-8 py-8 w-full flex flex-col md:flex-row gap-8">
       {/* Sidebar */}
@@ -203,14 +269,22 @@ const NeonVaultLayout = ({ activeCategory, setActiveCategory, displayedProducts,
         <div className="flex justify-between items-center bg-black/60 backdrop-blur-md p-4 rounded-xl border border-cyan-500/20 mb-6 text-sm shadow-[0_0_15px_rgba(6,182,212,0.1)]">
           <p className="tracking-wide">Showing results for <span className="text-fuchsia-400 font-bold drop-shadow-[0_0_5px_rgba(217,70,239,0.5)] uppercase">"{activeCategory}"</span></p>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {displayedProducts.map(product => (
-            <div key={product.id} className="h-[350px]">
-              <GlowingEdgeCard onClick={() => setSelectedProduct(product)} mode="dark">
-                <div className="relative h-48 bg-black border-b border-cyan-500/20 p-4 flex items-center justify-center">
-                  {product.badge && <div className="absolute top-3 left-3 z-10 text-black text-[10px] font-black px-2.5 py-1 uppercase rounded bg-fuchsia-500 backdrop-blur-sm shadow-[0_0_10px_rgba(217,70,239,0.8)] border border-fuchsia-400">{product.badge}</div>}
-                  <img src={product.image} alt={product.name} className="max-h-full max-w-full object-contain mix-blend-screen group-hover:scale-110 transition-transform duration-500 drop-shadow-2xl opacity-90 group-hover:opacity-100" />
-                </div>
+        {displayedProducts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-black/60 backdrop-blur-md rounded-xl border border-cyan-500/20 shadow-[0_0_15px_rgba(6,182,212,0.1)]">
+            <Package size={64} className="text-slate-600 mb-6" />
+            <h2 className="text-xl md:text-2xl font-black text-slate-400 uppercase tracking-widest text-center px-4">
+              Oops, we do not have anything in the inventory
+            </h2>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {displayedProducts.map(product => (
+              <div key={product.id} className="h-[350px]">
+                <GlowingEdgeCard onClick={() => navigate(`/product/${product.id}`)} mode="dark">
+                  <div className="relative h-48 bg-black border-b border-cyan-500/20 p-4 flex items-center justify-center">
+                    {product.badge && <div className="absolute top-3 left-3 z-10 text-black text-[10px] font-black px-2.5 py-1 uppercase rounded bg-fuchsia-500 backdrop-blur-sm shadow-[0_0_10px_rgba(217,70,239,0.8)] border border-fuchsia-400">{product.badge}</div>}
+                    <img src={product.images && product.images.length > 0 ? product.images[0] : product.image} alt={product.name} className="max-h-full max-w-full object-contain mix-blend-screen group-hover:scale-110 transition-transform duration-500 drop-shadow-2xl opacity-90 group-hover:opacity-100" />
+                  </div>
                 <div className="p-4 flex flex-col flex-grow bg-black/50 backdrop-blur-md">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-cyan-400 mb-1 drop-shadow-[0_0_2px_rgba(6,182,212,0.8)]">{product.category}</p>
                   <h4 className="text-sm font-bold text-slate-100 mb-2 line-clamp-2 leading-snug group-hover:text-cyan-300 transition-colors tracking-wide">{product.name}</h4>
@@ -230,59 +304,13 @@ const NeonVaultLayout = ({ activeCategory, setActiveCategory, displayedProducts,
             </div>
           ))}
         </div>
+        )}
       </div>
     </main>
 
     <StatsSection stats={stats} />
 
     <AIChat />
-
-    {/* Product Modal */}
-    {selectedProduct && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedProduct(null)} />
-        <div className="relative z-10 w-full max-w-4xl bg-[#0F0F10] border border-cyan-500/50 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,255,255,0.2)] flex flex-col md:flex-row">
-           <button onClick={() => setSelectedProduct(null)} className="absolute top-4 right-4 text-white hover:text-cyan-400 z-20 bg-black/50 p-2 rounded-full transition-colors"><X size={20}/></button>
-           <div className="w-full md:w-1/2 h-64 md:h-auto bg-black p-8 flex items-center justify-center border-b md:border-b-0 md:border-r border-cyan-500/20 relative">
-               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-900/20 via-black to-black"></div>
-               <img src={selectedProduct.image} alt={selectedProduct.name} className="relative z-10 max-w-full max-h-full object-contain mix-blend-screen drop-shadow-[0_0_30px_rgba(0,255,255,0.3)] animate-pulse" style={{animationDuration: '3s'}} />
-           </div>
-           <div className="p-8 w-full md:w-1/2 flex flex-col justify-center relative">
-               <div className="text-cyan-400 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
-                 <Sparkles size={12} className="text-fuchsia-500" />
-                 {selectedProduct.category}
-               </div>
-               <h2 className="text-3xl font-bold text-white mb-2 leading-tight">{selectedProduct.name}</h2>
-               {selectedProduct.caption && <p className="text-cyan-300 text-sm font-medium italic mb-2">{selectedProduct.caption}</p>}
-               <div className="flex items-center gap-1 mb-6 text-fuchsia-500 drop-shadow-[0_0_5px_rgba(217,70,239,0.5)]">
-                  <Star size={16} fill="currentColor" />
-                  <span className="text-sm text-slate-400 ml-1">({selectedProduct.reviews} reviews) • Rating: {selectedProduct.rating}/5</span>
-               </div>
-               
-               <p className="text-slate-300 text-sm mb-8 leading-relaxed whitespace-pre-line">
-                 {selectedProduct.description || "Experience unparalleled quality with this authentic piece. Meticulously designed for true enthusiasts, it perfectly embodies the aesthetic of The Vault. Limited availability."}
-               </p>
-               
-               <div className="flex items-center justify-between mt-auto pt-6 border-t border-cyan-500/20">
-                  {selectedProduct.offerPrice ? (
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl font-bold text-slate-500 line-through mt-1">₹{selectedProduct.price.toFixed(2)}</span>
-                      <span className="text-4xl font-black text-fuchsia-400 drop-shadow-[0_0_10px_rgba(217,70,239,0.4)]">₹{selectedProduct.offerPrice.toFixed(2)}</span>
-                    </div>
-                  ) : (
-                    <span className="text-4xl font-black text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">₹{selectedProduct.price.toFixed(2)}</span>
-                  )}
-                  <button 
-                     onClick={(e) => { e.stopPropagation(); addToCart(selectedProduct); setSelectedProduct(null); }}
-                     className="bg-cyan-500 text-black px-8 py-3 rounded-lg font-bold uppercase tracking-wider hover:bg-cyan-400 hover:scale-105 transition-all shadow-[0_0_20px_rgba(0,255,255,0.5)] flex items-center gap-2"
-                  >
-                    <ShoppingCart size={18} /> Buy Now
-                  </button>
-               </div>
-           </div>
-        </div>
-      </div>
-    )}
 
     {/* Footer */}
     <footer className="relative z-40 bg-black/80 backdrop-blur-md border-t border-cyan-500/30 mt-auto">
@@ -303,25 +331,50 @@ const NeonVaultLayout = ({ activeCategory, setActiveCategory, displayedProducts,
 // ==========================================
 export default function App() {
   const [activeCategory, setActiveCategory] = useState("All");
-  const [selectedProduct, setSelectedProduct] = useState(null);
   
   // User State
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    const token = localStorage.getItem('token');
+    if (savedUser && token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.exp * 1000 < Date.now()) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          return null;
+        }
+        return JSON.parse(savedUser);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
   });
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
+    setCart([]);
   };
   
   // Backend States
   const [liveProducts, setLiveProducts] = useState([]); 
-  const [cart, setCart] = useState([]);
+  const [heroes, setHeroes] = useState([]);
+  const [cart, setCart] = useState(() => {
+    const savedCart = localStorage.getItem('guestCart');
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
   const [stats, setStats] = useState(null);
   const [dbStatus, setDbStatus] = useState('Connecting...');
+
+  // Sync Guest Cart to LocalStorage
+  useEffect(() => {
+    if (!user) {
+      localStorage.setItem('guestCart', JSON.stringify(cart));
+    }
+  }, [cart, user]);
 
   // 1. Fetch Data from Node.js Backend
   useEffect(() => {
@@ -337,16 +390,26 @@ export default function App() {
           setDbStatus('Error Loading Products');
         }
 
-        const cartRes = await fetch(`${API_BASE}/cart`);
-        if (cartRes.ok) {
-          const cartData = await cartRes.json();
-          setCart(cartData);
+        if (user) {
+          const token = localStorage.getItem('token');
+          const cartRes = await fetch(`${API_BASE}/cart`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (cartRes.ok) {
+            const cartData = await cartRes.json();
+            setCart(cartData);
+          }
         }
         
         const statsRes = await fetch(`${API_BASE}/stats`);
         if (statsRes.ok) {
           const statsData = await statsRes.json();
           setStats(statsData);
+        }
+
+        const heroRes = await fetch(`${API_BASE}/hero`);
+        if (heroRes.ok) {
+          setHeroes(await heroRes.json());
         }
       } catch (err) {
         console.error("Fetch error:", err);
@@ -359,10 +422,20 @@ export default function App() {
 
   // 2. Handle Add to Cart via REST API
   const addToCart = async (product) => {
+    if (!user) {
+      const newItem = { ...product, _id: Date.now().toString() };
+      setCart(prev => [...prev, newItem]);
+      return;
+    }
+
     try {
+      const token = localStorage.getItem('token');
       const res = await fetch(`${API_BASE}/cart`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(product)
       });
       if (res.ok) {
@@ -390,11 +463,10 @@ export default function App() {
         displayedProducts={displayedProducts} 
         cart={cart} 
         addToCart={addToCart} 
-        selectedProduct={selectedProduct}
-        setSelectedProduct={setSelectedProduct}
         stats={stats}
         user={user}
         handleLogout={handleLogout}
+        heroes={heroes}
       />
     </>
   );

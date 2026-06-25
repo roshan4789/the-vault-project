@@ -7,7 +7,7 @@ const productSchema = new mongoose.Schema({
   category: { type: String, required: true },
   rating: { type: Number, default: 0 },
   reviews: { type: Number, default: 0 },
-  image: { type: String, required: true },
+  images: [{ type: String, required: true }],
   badge: { type: String, default: null }
 });
 

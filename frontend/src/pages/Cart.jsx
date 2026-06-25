@@ -9,14 +9,34 @@ export default function Cart() {
   const [cartItems, setCartItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const token = localStorage.getItem('token');
+
+  const [checkoutData, setCheckoutData] = useState({ 
+    name: user?.name || '', 
+    phone: user?.phone || '',
+    address: user?.address || '', 
+    city: user?.city || '', 
+    zip: user?.zip || '', 
+    card: '' 
+  });
 
   useEffect(() => {
     const fetchCart = async () => {
       try {
-        const res = await fetch(`${API_BASE}/cart`);
-        if (res.ok) {
-          const data = await res.json();
-          setCartItems(data);
+        if (!user) {
+          const guestCart = localStorage.getItem('guestCart');
+          setCartItems(guestCart ? JSON.parse(guestCart) : []);
+        } else {
+          const res = await fetch(`${API_BASE}/cart`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setCartItems(data);
+          }
         }
       } catch (err) {
         console.error("Failed to load cart", err);
@@ -25,30 +45,72 @@ export default function Cart() {
       }
     };
     fetchCart();
-  }, []);
+  }, [user, token]);
 
   const handleRemove = async (id) => {
     try {
-      // Optimistic update
-      setCartItems(prev => prev.filter(item => item._id !== id));
-      await fetch(`${API_BASE}/cart/${id}`, { method: 'DELETE' });
+      const updatedCart = cartItems.filter(item => item._id !== id);
+      setCartItems(updatedCart);
+      
+      if (!user) {
+        localStorage.setItem('guestCart', JSON.stringify(updatedCart));
+      } else {
+        await fetch(`${API_BASE}/cart/${id}`, { 
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      }
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleCheckout = async () => {
+  const handleCheckoutClick = () => {
+    if (!user) {
+      alert("Please log in or create an account to securely checkout.");
+      window.location.href = '/auth';
+      return;
+    }
+    setShowCheckoutForm(true);
+  };
+
+  const processCheckout = async (e) => {
+    e.preventDefault();
     setIsCheckingOut(true);
     try {
+      if (user) {
+        const updatedProfile = {
+          name: checkoutData.name,
+          phone: checkoutData.phone,
+          address: checkoutData.address,
+          city: checkoutData.city,
+          zip: checkoutData.zip
+        };
+        const profileRes = await fetch(`${API_BASE}/auth/profile`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(updatedProfile)
+        });
+        if (profileRes.ok) {
+          const updatedUser = await profileRes.json();
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        }
+      }
+
       const res = await fetch(`${API_BASE}/orders`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         }
       });
       if (res.ok) {
         alert("Order verified and securely placed!");
         setCartItems([]);
+        setShowCheckoutForm(false);
       } else {
         alert("Checkout failed. Your vault may be empty.");
       }
@@ -158,7 +220,7 @@ export default function Cart() {
               </div>
 
               <button 
-                onClick={handleCheckout}
+                onClick={handleCheckoutClick}
                 disabled={isCheckingOut}
                 className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-black uppercase tracking-widest py-4 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.5)] transition-all flex justify-center items-center gap-2 mb-4"
               >
@@ -174,6 +236,32 @@ export default function Cart() {
               </p>
             </div>
             
+          </div>
+        )}
+
+        {/* Checkout Modal */}
+        {showCheckoutForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowCheckoutForm(false)} />
+            <div className="relative z-10 w-full max-w-md bg-[#0F0F10] border border-cyan-500/50 rounded-2xl p-6 shadow-[0_0_50px_rgba(0,255,255,0.2)]">
+              <h2 className="text-xl font-bold text-white mb-4">Secure Checkout</h2>
+              <form onSubmit={processCheckout} className="space-y-4">
+                <input required type="text" placeholder="Full Name" value={checkoutData.name} onChange={e=>setCheckoutData({...checkoutData, name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-cyan-500 outline-none" />
+                <input required type="text" placeholder="Phone Number" value={checkoutData.phone} onChange={e=>setCheckoutData({...checkoutData, phone: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-cyan-500 outline-none" />
+                <input required type="text" placeholder="Shipping Address" value={checkoutData.address} onChange={e=>setCheckoutData({...checkoutData, address: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-cyan-500 outline-none" />
+                <div className="flex gap-4">
+                  <input required type="text" placeholder="City" value={checkoutData.city} onChange={e=>setCheckoutData({...checkoutData, city: e.target.value})} className="w-1/2 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-cyan-500 outline-none" />
+                  <input required type="text" placeholder="Zip Code" value={checkoutData.zip} onChange={e=>setCheckoutData({...checkoutData, zip: e.target.value})} className="w-1/2 bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-cyan-500 outline-none" />
+                </div>
+                <input required type="text" placeholder="Card Number (Mock)" value={checkoutData.card} onChange={e=>setCheckoutData({...checkoutData, card: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-cyan-500 outline-none" />
+                <div className="pt-4 flex justify-end gap-3">
+                  <button type="button" onClick={() => setShowCheckoutForm(false)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors">Cancel</button>
+                  <button type="submit" disabled={isCheckingOut} className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-6 py-2 rounded-lg disabled:opacity-50 transition-colors">
+                    {isCheckingOut ? 'Processing...' : `Pay ₹${total.toFixed(2)}`}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
       </div>
