@@ -38,7 +38,7 @@ const AIChat = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [messages, setMessages] = useState([{ role: 'assistant', text: "Welcome! Need help finding the perfect item? Ask me!" }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', text: "What can I help you with?" }]);
   const messagesEndRef = useRef(null);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isLoading]);
