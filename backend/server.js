@@ -329,14 +329,23 @@ app.get('/api/cart', verifyUser, async (req, res) => {
 app.post('/api/cart', verifyUser, async (req, res) => {
   if (!process.env.MONGO_URI) return res.status(503).json({ error: "Database offline." });
   try {
+    const productId = req.body.id || req.body.productId;
+    const authenticProduct = await Product.findOne({ id: productId });
+    
+    if (!authenticProduct) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
     let cart = await Cart.findOne({ userId: req.user.userId });
     if (!cart) cart = new Cart({ userId: req.user.userId, items: [] });
+    
     cart.items.push({
-      productId: req.body.id || req.body.productId,
-      name: req.body.name,
-      price: req.body.offerPrice || req.body.price,
-      image: req.body.image
+      productId: authenticProduct.id,
+      name: authenticProduct.name,
+      price: authenticProduct.offerPrice || authenticProduct.price,
+      image: authenticProduct.images && authenticProduct.images.length > 0 ? authenticProduct.images[0] : authenticProduct.image
     });
+    
     await cart.save();
     res.status(201).json(cart.items[cart.items.length - 1]);
   } catch (error) {
@@ -354,14 +363,19 @@ app.post('/api/cart/merge', verifyUser, async (req, res) => {
     let cart = await Cart.findOne({ userId: req.user.userId });
     if (!cart) cart = new Cart({ userId: req.user.userId, items: [] });
     
-    guestCart.forEach(item => {
-      cart.items.push({
-        productId: item.id || item.productId,
-        name: item.name,
-        price: item.offerPrice || item.price,
-        image: item.image
-      });
-    });
+    for (const item of guestCart) {
+      const productId = item.id || item.productId;
+      const authenticProduct = await Product.findOne({ id: productId });
+      
+      if (authenticProduct) {
+        cart.items.push({
+          productId: authenticProduct.id,
+          name: authenticProduct.name,
+          price: authenticProduct.offerPrice || authenticProduct.price,
+          image: authenticProduct.images && authenticProduct.images.length > 0 ? authenticProduct.images[0] : authenticProduct.image
+        });
+      }
+    }
     
     await cart.save();
     res.status(200).json(cart.items);
