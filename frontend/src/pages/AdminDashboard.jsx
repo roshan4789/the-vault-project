@@ -343,14 +343,26 @@ export default function AdminDashboard() {
                   <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Price (₹)</label>
                   <input required type="number" step="0.01" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="w-full bg-black/50 border border-fuchsia-500/20 rounded p-2.5 text-white outline-none" />
                 </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Discounted Price (₹)</label>
+                  <input type="number" step="0.01" value={formData.offerPrice} onChange={e => setFormData({...formData, offerPrice: e.target.value})} className="w-full bg-black/50 border border-fuchsia-500/20 rounded p-2.5 text-white outline-none" placeholder="Leave blank if no discount" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Tag / Badge</label>
+                  <input type="text" value={formData.badge} onChange={e => setFormData({...formData, badge: e.target.value})} className="w-full bg-black/50 border border-fuchsia-500/20 rounded p-2.5 text-white outline-none" placeholder="e.g. NEW, LIMITED" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Caption</label>
+                  <input type="text" value={formData.caption} onChange={e => setFormData({...formData, caption: e.target.value})} className="w-full bg-black/50 border border-fuchsia-500/20 rounded p-2.5 text-white outline-none" placeholder="Short sub-heading" />
+                </div>
                 <div className="col-span-2 border border-slate-800 rounded p-4 bg-black/30">
-                  <label className="block text-xs font-bold text-slate-400 uppercase mb-3 flex items-center justify-between">
-                    Images ({formData.images.length})
+                  <div className="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center justify-between">
+                    <span>Images ({formData.images.length})</span>
                     <label className="cursor-pointer bg-fuchsia-600 hover:bg-fuchsia-500 text-white px-3 py-1 rounded flex items-center gap-2">
                       {uploadingImage ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} Upload Local Image
                       <input type="file" className="hidden" accept="image/*" onChange={(e) => handleUploadImage(e, 'product')} />
                     </label>
-                  </label>
+                  </div>
                   <div className="flex gap-2 flex-wrap">
                     {formData.images.map((img, idx) => (
                       <div key={idx} className="relative w-20 h-20 group rounded overflow-hidden border border-slate-700">
@@ -393,13 +405,13 @@ export default function AdminDashboard() {
                 <input required type="text" value={heroFormData.description} onChange={e => setHeroFormData({...heroFormData, description: e.target.value})} className="w-full bg-black/50 border border-indigo-500/20 rounded p-2.5 text-white outline-none" />
               </div>
               <div className="border border-slate-800 rounded p-4 bg-black/30">
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-3 flex items-center justify-between">
-                  Cinematic Image Background
+                <div className="text-xs font-bold text-slate-400 uppercase mb-3 flex items-center justify-between">
+                  <span>Cinematic Image Background</span>
                   <label className="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded flex items-center gap-2">
                     {uploadingImage ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} Upload Image
                     <input type="file" className="hidden" accept="image/*" onChange={(e) => handleUploadImage(e, 'hero')} />
                   </label>
-                </label>
+                </div>
                 {heroFormData.image && (
                   <div className="w-full aspect-video rounded overflow-hidden border border-slate-700 mt-2">
                     <img src={heroFormData.image} className="w-full h-full object-cover" />
