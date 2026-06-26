@@ -35,16 +35,20 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Ensure uploads directory exists
+// Ensure uploads directory exists (Skip on Vercel read-only filesystem)
 const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)){
-    fs.mkdirSync(uploadsDir);
+try {
+  if (!fs.existsSync(uploadsDir)){
+      fs.mkdirSync(uploadsDir);
+  }
+} catch (error) {
+  console.warn("⚠️ Could not create uploads directory. This is expected on read-only environments like Vercel.");
 }
 
-// Configure Multer Storage
+// Configure Multer Storage (Will fail on Vercel if trying to write, but won't crash the app on boot)
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/')
+    cb(null, fs.existsSync('uploads/') ? 'uploads/' : '/tmp')
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + '-' + file.originalname)
