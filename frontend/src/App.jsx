@@ -330,6 +330,7 @@ const NeonVaultLayout = ({
     <StatsSection stats={stats} />
 
     <AIChat />
+    </div>
 
     {/* Footer */}
     <footer className="relative z-40 bg-black/80 backdrop-blur-md border-t border-cyan-500/30 mt-auto">
