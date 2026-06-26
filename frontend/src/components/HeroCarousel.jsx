@@ -34,12 +34,12 @@ export const HeroCarousel = ({ heroes }) => {
       </div>
 
       {/* Content Content */}
-      <div className="relative z-10 max-w-7xl mx-auto h-full px-4 lg:px-8 flex flex-col justify-end pb-12 md:pb-16 items-center text-center md:items-start md:text-left">
+      <div className="relative z-10 max-w-7xl mx-auto h-full px-4 lg:px-8 flex flex-col justify-end pb-12 md:pb-16 items-start text-left">
         <div className="max-w-2xl transform transition-all duration-700 translate-y-0 opacity-100">
-          <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-white uppercase tracking-tighter drop-shadow-[0_0_20px_rgba(217,70,239,0.8)] mb-3 md:mb-4 leading-tight">
+          <h1 className="text-4xl md:text-7xl font-black text-white uppercase tracking-tighter drop-shadow-[0_0_20px_rgba(217,70,239,0.8)] mb-3 md:mb-4 leading-tight md:leading-normal">
             {hero.title}
           </h1>
-          <p className="text-sm sm:text-lg md:text-xl text-slate-300 font-medium mb-6 md:mb-8 drop-shadow-md">
+          <p className="text-base md:text-xl text-slate-300 font-medium mb-6 md:mb-8 drop-shadow-md">
             {hero.description}
           </p>
           <a 
