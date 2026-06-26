@@ -20,7 +20,7 @@ export const HeroCarousel = ({ heroes }) => {
   const hero = heroes[currentIndex];
 
   return (
-    <div className="relative w-full h-[60vh] min-h-[400px] bg-black overflow-hidden group border-b border-fuchsia-500/30">
+    <div className="relative w-full h-[45vh] min-h-[350px] md:h-[60vh] md:min-h-[400px] bg-black overflow-hidden group border-b border-fuchsia-500/30">
       {/* Background Image */}
       <div className="absolute inset-0 transition-opacity duration-1000 ease-in-out">
         <img 
@@ -34,17 +34,17 @@ export const HeroCarousel = ({ heroes }) => {
       </div>
 
       {/* Content Content */}
-      <div className="relative z-10 max-w-7xl mx-auto h-full px-4 lg:px-8 flex flex-col justify-end pb-16">
+      <div className="relative z-10 max-w-7xl mx-auto h-full px-4 lg:px-8 flex flex-col justify-end pb-12 md:pb-16 items-center text-center md:items-start md:text-left">
         <div className="max-w-2xl transform transition-all duration-700 translate-y-0 opacity-100">
-          <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter drop-shadow-[0_0_20px_rgba(217,70,239,0.8)] mb-4">
+          <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-white uppercase tracking-tighter drop-shadow-[0_0_20px_rgba(217,70,239,0.8)] mb-3 md:mb-4 leading-tight">
             {hero.title}
           </h1>
-          <p className="text-lg md:text-xl text-slate-300 font-medium mb-8 drop-shadow-md">
+          <p className="text-sm sm:text-lg md:text-xl text-slate-300 font-medium mb-6 md:mb-8 drop-shadow-md">
             {hero.description}
           </p>
           <a 
             href={hero.linkUrl || '#'}
-            className="inline-flex items-center justify-center bg-white text-black px-8 py-3 rounded font-black uppercase tracking-widest hover:bg-fuchsia-400 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+            className="inline-flex items-center justify-center bg-white text-black px-6 py-2.5 md:px-8 md:py-3 rounded font-black uppercase tracking-widest text-sm md:text-base hover:bg-fuchsia-400 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.3)]"
           >
             {hero.buttonText || 'Shop Now'}
           </a>

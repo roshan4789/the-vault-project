@@ -114,6 +114,7 @@ const NeonVaultLayout = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   return (
   <div className="min-h-screen bg-[#1A1A1B] text-slate-300 font-sans flex flex-col selection:bg-cyan-500 selection:text-black relative overflow-x-hidden">
@@ -132,7 +133,7 @@ const NeonVaultLayout = ({
       />
     </div>
     
-    <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-md border-b border-cyan-500/30 shadow-[0_4px_30px_rgba(6,182,212,0.15)]">
+    <header className="fixed w-full top-0 z-50 bg-black/80 backdrop-blur-md border-b border-cyan-500/30 shadow-[0_4px_30px_rgba(6,182,212,0.15)]">
       <div className="max-w-[1400px] mx-auto px-4 lg:px-8 h-20 flex items-center justify-between gap-8">
         <div className="flex items-center cursor-pointer flex-shrink-0">
           <img 
@@ -193,6 +194,13 @@ const NeonVaultLayout = ({
             )}
           </Link>
 
+          {/* Search Icon for Mobile */}
+          <button 
+            className="md:hidden text-cyan-400 hover:text-cyan-300 transition-colors"
+            onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+          >
+            <Search size={22} />
+          </button>
           {/* Hamburger Menu for Mobile */}
           <button 
             className="md:hidden text-cyan-400 hover:text-cyan-300 transition-colors"
@@ -202,7 +210,18 @@ const NeonVaultLayout = ({
           </button>
         </div>
       </div>
+      {/* Mobile Search Dropdown */}
+      {mobileSearchOpen && (
+        <div className="md:hidden w-full bg-black/95 backdrop-blur-md border-b border-cyan-500/30 p-4 absolute top-20 left-0">
+          <div className="relative">
+            <input type="text" placeholder="Search products..." className="w-full bg-slate-900/80 border border-cyan-500/50 text-white rounded-md py-2.5 px-4 pr-12 outline-none focus:border-cyan-400 transition-all text-sm" />
+            <button className="absolute right-0 top-0 bottom-0 text-cyan-400 hover:text-cyan-300 px-4"><Search size={18} /></button>
+          </div>
+        </div>
+      )}
     </header>
+
+    <div className="pt-20 flex-grow flex flex-col">
 
     {showProfileModal && user && (
       <ProfileModal 
