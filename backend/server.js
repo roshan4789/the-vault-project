@@ -446,7 +446,7 @@ app.post('/api/chat', async (req, res) => {
 
   try {
     let catalogDesc = "No products found.";
-    if (process.env.MONGO_URI) {
+    if (process.env.MONGO_URI && isDbConnected) {
       const products = await Product.find({}).select('name price category rating badge -_id');
       catalogDesc = JSON.stringify(products);
     }
