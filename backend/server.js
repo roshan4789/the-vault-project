@@ -457,7 +457,8 @@ app.post('/api/chat', async (req, res) => {
     const result = await model.generateContent(prompt);
     res.json({ response: result.response.text() });
   } catch (error) {
-    res.status(500).json({ error: "AI error." });
+    console.error("Gemini API Error:", error);
+    res.status(500).json({ error: error.message || "AI error." });
   }
 });
 
