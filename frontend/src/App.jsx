@@ -108,7 +108,8 @@ const AIChat = () => {
 // ==========================================
 const NeonVaultLayout = ({ 
   activeCategory, setActiveCategory, displayedProducts, 
-  cart, addToCart, stats, user, handleLogout, heroes 
+  cart, addToCart, stats, user, handleLogout, heroes,
+  searchQuery, setSearchQuery
 }) => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -143,7 +144,7 @@ const NeonVaultLayout = ({
           />
         </div>
         <div className="hidden md:flex flex-1 max-w-2xl relative">
-          <input type="text" placeholder="Search products..." className="w-full bg-black/80 backdrop-blur-sm border border-cyan-500/30 text-white rounded-md py-2.5 px-4 pr-12 outline-none focus:border-cyan-400 focus:bg-black focus:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all text-sm" />
+          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search products..." className="w-full bg-black/80 backdrop-blur-sm border border-cyan-500/30 text-white rounded-md py-2.5 px-4 pr-12 outline-none focus:border-cyan-400 focus:bg-black focus:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all text-sm" />
           <button className="absolute right-0 top-0 bottom-0 bg-transparent border-l border-cyan-500/30 hover:bg-cyan-500 text-cyan-400 hover:text-black px-4 rounded-r-md transition-all backdrop-blur-sm"><Search size={18} /></button>
         </div>
         <div className="flex items-center gap-6 text-slate-300">
@@ -214,7 +215,7 @@ const NeonVaultLayout = ({
       {mobileSearchOpen && (
         <div className="md:hidden w-full bg-black/95 backdrop-blur-md border-b border-cyan-500/30 p-4 absolute top-20 left-0">
           <div className="relative">
-            <input type="text" placeholder="Search products..." className="w-full bg-slate-900/80 border border-cyan-500/50 text-white rounded-md py-2.5 px-4 pr-12 outline-none focus:border-cyan-400 transition-all text-sm" />
+            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search products..." className="w-full bg-slate-900/80 border border-cyan-500/50 text-white rounded-md py-2.5 px-4 pr-12 outline-none focus:border-cyan-400 transition-all text-sm" />
             <button className="absolute right-0 top-0 bottom-0 text-cyan-400 hover:text-cyan-300 px-4"><Search size={18} /></button>
           </div>
         </div>
@@ -351,6 +352,7 @@ const NeonVaultLayout = ({
 // ==========================================
 export default function App() {
   const [activeCategory, setActiveCategory] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   
   // User State
   const [user, setUser] = useState(() => {
@@ -467,9 +469,10 @@ export default function App() {
     }
   };
 
-  const displayedProducts = activeCategory === "All" 
+  const displayedProducts = (activeCategory === "All" 
     ? liveProducts 
-    : liveProducts.filter(p => p.category === activeCategory);
+    : liveProducts.filter(p => p.category === activeCategory)
+  ).filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.caption?.toLowerCase().includes(searchQuery.toLowerCase()));
 
   if (dbStatus === 'Connecting...') {
     return <SpeedLoader text="Establishing secure connection to database..." />;
@@ -487,6 +490,8 @@ export default function App() {
         user={user}
         handleLogout={handleLogout}
         heroes={heroes}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
       />
     </>
   );

@@ -341,11 +341,11 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Price (₹)</label>
-                  <input required type="number" step="0.01" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="w-full bg-black/50 border border-fuchsia-500/20 rounded p-2.5 text-white outline-none" />
+                  <input required type="number" min="0" step="0.01" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="w-full bg-black/50 border border-fuchsia-500/20 rounded p-2.5 text-white outline-none" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Discounted Price (₹)</label>
-                  <input type="number" step="0.01" value={formData.offerPrice} onChange={e => setFormData({...formData, offerPrice: e.target.value})} className="w-full bg-black/50 border border-fuchsia-500/20 rounded p-2.5 text-white outline-none" placeholder="Leave blank if no discount" />
+                  <input type="number" min="0" step="0.01" value={formData.offerPrice} onChange={e => setFormData({...formData, offerPrice: e.target.value})} className="w-full bg-black/50 border border-fuchsia-500/20 rounded p-2.5 text-white outline-none" placeholder="Leave blank if no discount" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Tag / Badge</label>

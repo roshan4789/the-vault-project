@@ -547,6 +547,9 @@ app.put('/api/admin/orders/:id/deliver', verifyAdmin, async (req, res) => {
 app.post('/api/admin/products', verifyAdmin, async (req, res) => {
   try {
     const productData = req.body;
+    if (productData.price < 0 || (productData.offerPrice && productData.offerPrice < 0)) {
+      return res.status(400).json({ error: "Price cannot be negative" });
+    }
     productData.id = Date.now().toString(); // Generate ID mapping
     
     if (!process.env.MONGO_URI) {
@@ -565,6 +568,9 @@ app.post('/api/admin/products', verifyAdmin, async (req, res) => {
 // Admin Update Product
 app.put('/api/admin/products/:id', verifyAdmin, async (req, res) => {
   try {
+    if (req.body.price < 0 || (req.body.offerPrice && req.body.offerPrice < 0)) {
+      return res.status(400).json({ error: "Price cannot be negative" });
+    }
     if (!process.env.MONGO_URI) {
       const index = offlineProducts.findIndex(p => p.id === req.params.id);
       if (index !== -1) {
